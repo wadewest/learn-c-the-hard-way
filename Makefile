@@ -5,3 +5,6 @@ clean:
 
 run: main
 	./main
+
+valgrind: main
+	valgrind ./main
