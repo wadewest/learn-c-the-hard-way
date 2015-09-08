@@ -1,14 +1,12 @@
 #include <stdio.h>
 
-// Code is broken to demostrate Valgrind
-
+/* This is a comment */
 int main(int argc, char *argv[])
 {
-    int age = 10;
-    int height;
+    int distance = 100;
     
-    printf("I am %d years old.\n");
-    printf("I am %d inches tall.\n", height);
+    // this is also a comment
+    printf("You are %d miles away.\n", distance);
     
     return 0;
 }
