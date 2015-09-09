@@ -2,26 +2,52 @@
 
 int main(int argc, char *argv[])
 {
+  if( argc != 2)
+  {
+    printf("ERROR: You need on argument.\n");
+    // this is how you abort a program
+    return 1;
+  }
+  
   int i = 0;
-  
-  if (argc == 1)
+  for(i = 0; argv[1][i] != '\0'; i++)
   {
-    printf("You only have one argument. You suck.\n");
-  }
-  else if (argc > 1 && argc < 4)
-  {
-    printf("Here's you arguments:\n");
+    char letter = argv[1][i];
     
-    for(i = 0; i < argc; i++)
+    switch(letter)
     {
-      printf("%s ", argv[i]);
+      case 'a':
+      case 'A':
+        printf("%d: 'A'\n", i);
+        break;
+      case 'e':
+      case 'E':
+        printf("%d: 'E'\n", i);
+        break;
+      case 'i':
+      case 'I':
+        printf("%d: 'I'\n", i);
+        break;
+      case 'o':
+      case 'O':
+        printf("%d: 'O'\n", i);
+        break;
+      case 'u':
+      case 'U':
+        printf("%d: 'U'\n", i);
+        break;
+      case 'y':
+      case 'Y':
+        if(i > 2)
+        {
+          // it's only sometimes Y
+          printf("%d: 'Y'\n", i);
+        }
+        break;
+      default:
+        printf("%d: %c in not a vowel\n", i, letter);
+      
     }
-    printf("\n");
   }
-  else
-  {
-    printf("You have too many arguments.  You suck.\n");
-  }
-  
   return 0;
 }
