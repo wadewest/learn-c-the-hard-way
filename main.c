@@ -1,40 +1,14 @@
 #include <stdio.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
 
-#define MAX_DATA 512
-#define MAX_ROWS 100
-
-struct Address
-{
-  int id;
-  int set;
-  char name[MAX_DATA];
-  char email[MAX_DATA];
-};
-
-struct Database
-{
-  struct Address rows[MAX_ROWS];
-};
-
-struct Connection
-{
-  FILE *file;
-  struct Database *db;
-};
-
+/* Our old friend die from ex17. */
 void die(const char *message)
 {
   if(errno)
   {
     perror(message);
-  }
-  else if(die_str)
-  {
-    printf("ERROR: %s\n", die_str);  
   }
   else
   {
@@ -43,154 +17,87 @@ void die(const char *message)
   exit(1);
 }
 
-void Address_print(struct Address *addr)
-{
-  printf("%d %s %s\n", addr->id, addr->name, addr->email);
-}
+// a typedef creates a fake type, in this
+// case for a function pointer
+typedef int (*compare_cb)(int a, int b);
 
-void Database_load(struct Connection *conn)
+/**
+ * A classic bubble sort function that uses the
+ * compare_cb to do the sorting.
+ */
+int *bubble_sort(int *numbers, int count, compare_cb cmp)
 {
-  int rc = fread(conn->db, sizeof(struct Database), 1, conn->file);
-  if(rc != 1) die("Failed to load database.");
-}
-
-struct Connection *Database_open(const char *filename, char mode)
-{
-  struct Connection *conn = malloc(sizeof(struct Connection));
-  if(!conn) die("Memory error");
-  conn->db = malloc(sizeof(struct Database));
-  if(!conn->db) die("Memory error");
-  if(mode == 'c')
+  int temp = 0;
+  int i = 0;
+  int j = 0;
+  int *target = malloc(count * sizeof(int));
+  if(!target) die("Memory error.");
+  memcpy(target, numbers, count * sizeof(int));
+  for(i = 0; i < count; i++)
   {
-    conn->file = fopen(filename, "w");
-  }
-  else
-  {
-    conn->file = fopen(filename, "r+");
-    if(conn->file)
+    for(j = 0; j < count - 1; j++)
     {
-      Database_load(conn);
+      if(cmp(target[j], target[j+1]) > 0)
+      {
+        temp = target[j+1];
+        target[j+1] = target[j];
+        target[j] = temp;
+      }
     }
   }
-  if(!conn->file) die("Failed to open the file");
-  return conn;
+  return target;
 }
 
-void Database_close(struct Connection *conn)
+int sorted_order(int a, int b)
 {
-  if(conn)
-  {
-    if(conn->file) fclose(conn->file);
-    if(conn->db) free(conn->db);
-    free(conn);
-  }
+  return a - b;
 }
 
-void Database_write(struct Connection *conn)
+int reverse_order(int a, int b)
 {
-  rewind(conn->file);
-  int rc = fwrite(conn->db, sizeof(struct Database), 1, conn->file);
-  if(rc != 1) die("Faild to write database");
-  rc = fflush(conn->file);
-  if(rc == 1) die("Cannot flush database");
+  return b - a;
 }
 
-void Database_create(struct Connection *conn)
+
+int strange_order(int a, int b)
 {
-  int i = 0;
-  for(i = 0; i < MAX_ROWS; i++)
-  {
-    // make a prototype to initialize it
-    struct Address addr = {.id = i, .set = 0};
-    // then just assign it
-    conn->db->rows[i] = addr;
-  }
+  if(a==0 || b==0) return 0;
+  else return a % b;
 }
 
-void Database_set(struct Connection *conn, int id, const char *name, const char *email)
-{
-  struct Address *addr = &conn->db->rows[id];
-  if(addr->set) die("Already set, delete it first");
-  addr->set = 1;
-  // WARNING: bug, read the "How To Break It" and fix this
-  char *res = strncpy(addr->name, name, MAX_DATA - 1);
-  // demonstrate the strncpy bug
-  if(!res) die("Name copy failed");
-  addr->name[MAX_DATA - 1] = '\0';
-  res = strncpy(addr->email, email, MAX_DATA - 1);
-  if(!res) die("Email copy failed");
-  addr->email[MAX_DATA - 1] = '\0';
-}
-
-void Database_get(struct Connection *conn, int id)
-{
-  struct Address *addr = &conn->db->rows[id];
-  if(addr->set)
-  {
-    Address_print(addr);
-  }
-  else
-  {
-    die("ID is not set");
-  }
-}
-
-void Database_delete(struct Connection *conn, int id)
-{
-  struct Address addr = {.id = id, .set = 0};
-  conn->db->rows[id] = addr;
-}
-
-void Database_list(struct Connection *conn)
+/**
+ * Used to test that we are sorting things correctly
+ * by doing the sort and printing it out.
+ */
+void test_sorting(int *numbers, int count, compare_cb cmp)
 {
   int i = 0;
-  struct Database *db = conn->db;
-  for(i = 0; i < MAX_ROWS; i++)
+  int *sorted = bubble_sort(numbers, count, cmp);
+  if(!sorted) die("Failed to sort as requested.");
+  for(i=0; i < count; i++)
   {
-    struct Address *cur = &db->rows[i];
-    if(cur->set)
-    {
-      Address_print(cur);
-    }
+    printf("%d ", sorted[i]);
   }
+  printf("\n");
+  free(sorted);
 }
 
 int main(int argc, char *argv[])
 {
-  if(argc < 3) die("USAGE: main <dbfile> <action> [action params]");
-  char *filename = argv[1];
-  char action = argv[2][0];
-  struct Connection *conn = Database_open(filename, action);
-  int id = 0;
-  if(argc > 3) id = atoi(argv[3]);
-  if(id >= MAX_ROWS) die("There's not that many records.");
-  switch(action)
+  if(argc < 2) die("USAGE: main 4 3 1 5 6");
+  int count = argc - 1;
+  int i = 0;
+  char **inputs = argv + 1;
+  int *numbers = malloc(count * sizeof(int));
+  if(!numbers) die("Memory error.");
+  for(i = 0; i < count; i++)
   {
-    case 'c':
-      Database_create(conn);
-      Database_write(conn);
-      break;
-    case 'g':
-      if(argc != 4) die("Need an id to get");
-      Database_get(conn, id);
-      break;
-    case 's':
-      if(argc != 6) die("Need id, name, email to set");
-      Database_set(conn, id, argv[4], argv[5]);
-      Database_write(conn);
-      break;
-    case 'd':
-      if(argc != 4) die("Need id to delete");
-      Database_delete(conn, id);
-      Database_write(conn);
-      break;
-    case 'l':
-      Database_list(conn);
-      break;
-    default:
-      die("Invalid action, only: c=create, g=get, s=set, d=del, l=list");
+    numbers[i] = atoi(inputs[i]);
   }
-  Database_close(conn);
+  test_sorting(numbers, count, sorted_order);
+  test_sorting(numbers, count, reverse_order);
+  test_sorting(numbers, count, strange_order);
+  free(numbers);
   return 0;
 }
 
