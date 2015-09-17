@@ -2,7 +2,7 @@ CFLAGS=-Wall -g
 
 all: main
 
-main: object.o
+main: dbg.h
 
 clean:
 	rm -f main
